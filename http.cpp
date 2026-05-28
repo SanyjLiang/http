@@ -1,5 +1,6 @@
 #include "http.h"
 #include <myhead.h>
+#include <sys/sendfile.h>
 
 #define SIZE 4096
 
@@ -69,6 +70,74 @@ int get_line(int sock,char *buf)
     }
     buf[i]='\0';
     return i;
+}
+
+//定义清空头部的函数
+static void clear_header(int sock)
+{
+    char buf[4096]="";      //读取消息的容器
+    int ret=0;              //读取的个数
+    do
+    {
+        ret=get_line(sock,buf);              //循环将每一行数据全部读取出来
+    } while (ret!=1&&strcmp(buf,"\n")!=0);
+    
+}
+
+
+//定义展示404界面的函数
+static void show_404(int sock)
+{
+    //将获取的消息的头部全部清除掉，上面解析数据时，只解析了请求行
+    clear_header(sock);
+
+    //组装首部信息
+    const char*msg="HTTP/1.1 404 Not Found\r\n";
+    //发送首部
+    send(sock,msg,strlen(msg),0);
+    send(sock,"\r\n",strlen("\r\n"),0);     //发送一个空行，切记切记
+
+    //打开一个html页面文档
+    struct stat st;     //定义一个文件状态结构体
+    stat("../wwwroot/404.html",&st);        //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
+    int fd=open("../wwwroot/404.html",O_RDONLY);        //以只读的形式打开文件
+    if(fd==-1)
+    {
+        perror("open 404 error");
+        return ;
+    }
+
+    //将整个文件发送出去
+    //函数原型:ssize_t sendfile(int out_fd,int in_fd,off_t *offset,size_t count);
+    //功能：将一个文件描述符中的数据发送到另一个文件描述符中
+    //参数1：要拷贝到的文件描述符
+    //参数2：从哪个文件中拷贝
+    //参数3：从该文件的哪个位置开始拷贝
+    //参数4：拷贝的文件大小
+    sendfile(sock,fd,NULL,st.st_size);
+    close(fd);
+}
+
+//定义处理错误信息的响应
+//参数1：套接字文件描述符
+//参数2：错误码
+void echo_error(int sock,int err_code)
+{
+    //对错误码进行多分支选择
+    switch(err_code)
+    {
+        case 403:
+            break;
+        case 404:
+            show_404(sock);
+            break;
+        case 405:
+            break;
+        case 500:
+            break;
+        default:
+            break;
+    }
 }
 
 //用于处理客户端信息函数的定义
