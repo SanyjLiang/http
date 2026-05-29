@@ -99,8 +99,8 @@ static void show_404(int sock)
 
     //打开一个html页面文档
     struct stat st;     //定义一个文件状态结构体
-    stat("../wwwroot/404.html",&st);        //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
-    int fd=open("../wwwroot/404.html",O_RDONLY);        //以只读的形式打开文件
+    stat("..wwwroot/404.html",&st);        //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
+    int fd=open("..wwwroot/404.html",O_RDONLY);        //以只读的形式打开文件
     if(fd==-1)
     {
         perror("open 404 error");
@@ -138,6 +138,33 @@ void echo_error(int sock,int err_code)
         default:
             break;
     }
+}
+
+//定义响应普通页面的函数
+static int echo_www(int sock,const char* path,size_t s)
+{
+    //以只读的形式打开文件
+    int fd=open(path,O_RDONLY);
+    if(fd==-1)
+    {
+        perror("open error");
+        return -1;
+    }
+
+    //组装响应首部
+    const char *msg="HTTP/1.1 200 OK\r\n";
+    send(sock,msg,strlen(msg),0);       //发送给客户端网页
+    send(sock,"\r\n",strlen("\r\n"),0);  //发送空行
+
+    //将整个文件发给网页端
+    if(sendfile(sock,fd,NULL,s)==-1)
+    {
+        echo_error(sock,500);
+        return -1;
+    }
+
+    close(fd);
+    return 0;
 }
 
 //用于处理客户端信息函数的定义
@@ -251,7 +278,13 @@ int handler_msg(int sock)
 
     //我们可以把请求资源路径固定为 wwwroot 下的资源
     char path[SIZE]="";         //用于确定要响应的文件路径
-    sprintf(path,"../wwwroot%s",url);   //将url合成一个服务器中的路径
+    sprintf(path,"wwwroot%s",url);   //将url合成一个服务器中的路径
+
+    //如果请求的没有的地址没有任何携带资源，那么默认返回index.html
+    if(path[strlen(path)-1]=='\n')
+    {
+        strcat(path,"index.html");
+    }
 
     printf("path=%s\n",path);
 
@@ -261,7 +294,7 @@ int handler_msg(int sock)
     {
         //说明要访问的文件不存在
         printf("can not find file\n");
-        //echo_error(sock,404);
+        echo_error(sock,404);
         close(sock);
         return -1;
     }
@@ -279,10 +312,10 @@ int handler_msg(int sock)
         //参数4：请求附带的数据
     }else{
         //调用清除 请求首部剩余的内容
-        //clear_header(sock);
+        clear_header(sock);
 
         //此时表示是GET请求，并且没有附加数据，则直接返回请求的界面即可
-        //echo_www(sock,path,st.st_size);
+        echo_www(sock,path,st.st_size);
     }
     
     close(sock);
