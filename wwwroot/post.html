@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=v , initial-scale=1.0">
+    <title>POST  请求测试</title>
+
+        <script>
+
+        function sendPOSTRequest()
+        {
+            var xhr=new XMLHttpRequest();   //创建一个XMLHttpRequest请求的对象
+            var rul="";             //请求的url,可以写也可以不写
+
+            //h 获取当前的ui界面导航的数据
+            data="data1="+document.getElementById("data1").value+"data2="+document.getElementById("data2").value;
+
+            console.log("req="+data);       //在页面上展示内容
+            //配置POST请求
+            xhr.open("POST",url,true);      //配置请求：POST方法，URL ， 异步请求
+
+            xhr.onreadystatechange=function()
+            {
+                if(xhr.readyState===4&&xhr.status===200)
+                {
+                    var response=xhr.responseText;//获取响应文本
+                    console.log("req="+ response);
+                    document.getElementById("sum").value=response;      //将获取的结果展示在ui界面
+                }
+           
+            };
+
+            //将当前界面的数据发送给服务器
+            xhr.send(JSON.stringify(data));
+        }
+
+    </script>
+
+</head>
+
+
+<body>
+    data1:<intput type="text" id="data1" value="1"> <br>
+    data2:<intput type="text" id="data2" value="2"> <br>
+    求和: <intput type="text" id="sum" placeholder="在此处显示和"> <br><br>
+    <button onclick="sendPOSTRequest()">求和</button>
+</body>
+</html>

@@ -54,7 +54,7 @@ int get_line(int sock,char *buf)
     while(i<SIZE&&ch!='\n')         //当buf没有满并且没有读取到换行时，继续读取     
     {
         ret=recv(sock,&ch,1,0);     //从缓冲区中读取一字节数据放入到ch中
-        if(ret>0&&ch=='r')
+        if(ret>0&&ch=='\r')
         {
             //下一个字符可能是 '\n'
             int s=recv(sock,&ch,1,MSG_PEEK);    //将下一个字符拿出来看看
@@ -99,8 +99,8 @@ static void show_404(int sock)
 
     //打开一个html页面文档
     struct stat st;     //定义一个文件状态结构体
-    stat("..wwwroot/404.html",&st);        //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
-    int fd=open("..wwwroot/404.html",O_RDONLY);        //以只读的形式打开文件
+    stat("wwwroot/404.html",&st);        //获取wwwroot目录下的404界面信息，主要使用该信息中文件大小的成员
+    int fd=open("wwwroot/404.html",O_RDONLY);        //以只读的形式打开文件
     if(fd==-1)
     {
         perror("open 404 error");
@@ -165,6 +165,52 @@ static int echo_www(int sock,const char* path,size_t s)
 
     close(fd);
     return 0;
+}
+
+//定义处理POST请求或携带数据的GET请求
+static int handle_request(int sock,const char*method,const char* path,const char *querry_string)
+{
+    char line[SIZE]="";     //存储一行信息
+    int ret=0;              //接收读取的内容
+    int content_len=-1;     //文本长度
+
+    //判断是什么请求
+    if(strcasecmp(method,"GET")==0)
+    {
+        //清空消息报头
+        clear_header(sock);
+    }else{
+        //获取POST请求的参数大小
+        do
+        {
+            ret=get_line(sock,line);
+            if(strncasecmp(line,"content-length",14)==0)            //找到该长度
+            {
+                content_len=atoi(line+16);      //将数字字符串转为整数
+            }
+        }while(ret!=1&&(strcmp(line,"\n"))!=0);
+    }
+
+    //输出相关数据
+    printf("method = %s\n",method);
+    printf("query_string=%s\n",querry_string);
+    printf("content_len=%d\n",content_len);
+
+    char req_buf[4096]="";      //用于回复的消息
+    //如果是POST请求，那么肯定会携带数据，需要将数据解析出来
+    if(strcasecmp(method,"POST")==0)
+    {
+        int len=recv(sock,req_buf,content_len,0);       //将所需信息读取出来
+        printf("len=%d\n",len);
+        printf("req_buf=%s\n",req_buf);
+    }
+
+    //发送给客户端消息
+    const char*msg="HTTP/1.1 200 OK\r\n\r\n";           //回复报文响应首部
+    send(sock,msg,strlen(msg),0);
+
+    //请求交给自定义的函数来处理业务逻辑
+    //parse_and_process(sock,querry_string,req_buf);
 }
 
 //用于处理客户端信息函数的定义
@@ -281,12 +327,14 @@ int handler_msg(int sock)
     sprintf(path,"wwwroot%s",url);   //将url合成一个服务器中的路径
 
     //如果请求的没有的地址没有任何携带资源，那么默认返回index.html
-    if(path[strlen(path)-1]=='\n')
+    if(path[strlen(path)-1]=='/')
     {
         strcat(path,"index.html");
     }
 
     printf("path=%s\n",path);
+
+    printf("1111111111111\n");
 
     //判断当前服务器中是否有该path
     struct stat st;
@@ -301,23 +349,29 @@ int handler_msg(int sock)
 
     //程序执行至此，表示能够确定是否需要自己来处理后续逻辑了
 
+    printf("22222222222222222222\n");
+
     //如果是POST请求或者是携带数据的GET请求，都需要手动书写逻辑进行处理
     if(need_handle==1)
     {
-        //handle_request(sock,method,path,querrt_string);
+        printf("33333333333333\n");
+        handle_request(sock,method,path,querry_string);
         //调用处理请求函数
         //参数1：套接字文件描述符
         //参数2：请求方法
         //参数3：请求的路径
         //参数4：请求附带的数据
+        printf("44444444\n");
     }else{
         //调用清除 请求首部剩余的内容
         clear_header(sock);
-
+        printf("666666666666666\n");
         //此时表示是GET请求，并且没有附加数据，则直接返回请求的界面即可
         echo_www(sock,path,st.st_size);
+        printf("77777777777777\n");
     }
     
+    printf("555555555555555555555\n");
     close(sock);
     return 0;
 }
