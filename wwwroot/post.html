@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=v , initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POST  请求测试</title>
 
         <script>
@@ -10,7 +10,7 @@
         function sendPOSTRequest()
         {
             var xhr=new XMLHttpRequest();   //创建一个XMLHttpRequest请求的对象
-            var rul="";             //请求的url,可以写也可以不写
+            var url="";             //请求的url,可以写也可以不写
 
             //h 获取当前的ui界面导航的数据
             data="data1="+document.getElementById("data1").value+"data2="+document.getElementById("data2").value;
@@ -40,9 +40,9 @@
 
 
 <body>
-    data1:<intput type="text" id="data1" value="1"> <br>
-    data2:<intput type="text" id="data2" value="2"> <br>
-    求和: <intput type="text" id="sum" placeholder="在此处显示和"> <br><br>
+    data1:<input type="text" id="data1" value="1"> <br>
+    data2:<input type="text" id="data2" value="2"> <br>
+    求和: <input type="text" id="sum" placeholder="在此处显示和"> <br><br>
     <button onclick="sendPOSTRequest()">求和</button>
 </body>
 </html>

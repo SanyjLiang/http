@@ -1,4 +1,5 @@
 #include "http.h"
+#include "custom_handle.h"
 #include <myhead.h>
 #include <sys/sendfile.h>
 
@@ -210,7 +211,7 @@ static int handle_request(int sock,const char*method,const char* path,const char
     send(sock,msg,strlen(msg),0);
 
     //请求交给自定义的函数来处理业务逻辑
-    //parse_and_process(sock,querry_string,req_buf);
+    parse_and_process(sock,querry_string,req_buf);
 }
 
 //用于处理客户端信息函数的定义
